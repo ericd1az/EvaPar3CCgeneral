@@ -1,0 +1,129 @@
+.dashboard-hero {
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 1.5rem;
+  padding: 0.4rem 0 1.8rem 1.25rem;
+  border-left: 3px solid #0a6d73;
+  border-bottom: 1px solid #d9d2c6;
+  background: radial-gradient(ellipse at 88% 40%, #eae4d8 0%, transparent 54%);
+}
+
+.dashboard-hero::after {
+  content: attr(data-number);
+  position: absolute;
+  right: 0.4rem;
+  top: -1.6rem;
+  color: #d9d0c0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(5.5rem, 10vw, 9rem);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.dashboard-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-eyebrow {
+  color: #0a6d73;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.dashboard-hero h1 {
+  margin: 0.55rem 0 0.55rem;
+  color: #253842;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 3.25vw, 3.1rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 1.18;
+}
+
+.dashboard-hero p {
+  max-width: 58rem;
+  margin: 0;
+  color: #566669;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 850px) {
+  .dashboard-hero::after {
+    opacity: 0.4;
+  }
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  color: #253842;
+  font-size: 0.8rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+}
+
+.brand-mark {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  background: #0a6d73;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.profile-entry {
+  min-height: 7rem;
+  padding: 0.8rem 0 1.2rem;
+  border-top: 2px solid var(--profile-color);
+}
+
+.profile-entry p {
+  margin: 1rem 0 0;
+  color: #253842;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.cluster-dot {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-right: 0.45rem;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.cluster-label {
+  color: #566669;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+}
+
+.column-heading {
+  margin: 0 0 1rem;
+  padding: 0.25rem 0 0.25rem 0.8rem;
+  border-left: 3px solid #0a6d73;
+  color: #253842;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.column-heading.recommendations {
+  border-left-color: #c58b39;
+}

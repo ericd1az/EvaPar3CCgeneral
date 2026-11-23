@@ -1,0 +1,18 @@
+[theme]
+base = "light"
+primaryColor = "#0A6D73"
+backgroundColor = "#F6F3ED"
+secondaryBackgroundColor = "#FFFCF7"
+textColor = "#253842"
+font = "Segoe UI, sans-serif"
+headingFont = "Georgia, serif"
+headingFontWeights = 400
+baseRadius = "0.4rem"
+showWidgetBorder = true
+borderColor = "#DDD8CF"
+
+[theme.sidebar]
+backgroundColor = "#EDE8DF"
+textColor = "#253842"
+font = "Segoe UI, sans-serif"
+headingFont = "Georgia, serif"
