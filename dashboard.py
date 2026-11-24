@@ -1,4 +1,5 @@
 from pathlib import Path
+from textwrap import fill
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -64,6 +65,13 @@ if not columnas_necesarias.issubset(datos.columns):
     st.error("El CSV procesado no contiene todas las columnas necesarias para el dashboard.")
     st.stop()
 
+perfiles = datos.groupby("Cluster")["Perfil"].first().to_dict()
+
+
+def etiqueta_perfil(cluster):
+    return fill(perfiles[cluster], width=27)
+
+
 # Aplicar tres filtros a las dos páginas
 st.sidebar.html(
     '<div class="sidebar-brand"><span class="brand-mark">AC</span>'
@@ -74,8 +82,8 @@ st.sidebar.divider()
 st.sidebar.subheader("Filtros")
 clusters = sorted(datos["Cluster"].unique().tolist())
 clusters_elegidos = st.sidebar.multiselect(
-    "Clústeres", clusters, default=clusters,
-    format_func=lambda numero: f"Clúster {numero}",
+    "Perfiles de clientes", clusters, default=clusters,
+    format_func=lambda numero: perfiles[numero],
 )
 limite_compras = int(np.ceil(datos["PURCHASES"].max()))
 rango_compras = st.sidebar.slider(
@@ -186,81 +194,78 @@ def pagina_segmentacion():
 
     grupos = sorted(filtrados["Cluster"].unique())
     st.subheader("Distribución de grupos")
-    izquierda, derecha = st.columns([1, 1.35], gap="medium")
 
-    with izquierda:
-        with st.container():
-            st.markdown("**Clientes por clúster**")
-            st.caption("Tamaño de cada grupo dentro de la selección")
-            conteos = filtrados["Cluster"].value_counts().sort_index()
-            fig, ax = plt.subplots(figsize=(6, 4.6))
-            preparar_grafica(ax)
-            barras = ax.bar(
-                [str(c) for c in conteos.index], conteos.values,
-                color=[COLORES[c - 1] for c in conteos.index], width=0.62,
+    with st.container():
+        st.markdown("**Clientes por perfil**")
+        st.caption("Tamaño de cada grupo dentro de la selección")
+        conteos = filtrados["Cluster"].value_counts().sort_index()
+        fig, ax = plt.subplots(figsize=(10, 4.8))
+        preparar_grafica(ax, "x")
+        barras = ax.barh(
+            [etiqueta_perfil(c) for c in conteos.index], conteos.values,
+            color=[COLORES[c - 1] for c in conteos.index], height=0.62,
+        )
+        ax.invert_yaxis()
+        ax.bar_label(barras, padding=5, fontsize=9, color=TINTA)
+        ax.set_xlabel("Clientes")
+        ax.set_xlim(0, max(conteos.max(), 1) * 1.18)
+        mostrar_grafica(fig)
+
+    with st.container():
+        st.markdown("**Mapa de los grupos**")
+        st.caption("Cada punto representa un cliente en dos componentes principales")
+        fig, ax = plt.subplots(figsize=(10, 5.7))
+        preparar_grafica(ax, None)
+        for cluster in grupos:
+            grupo = filtrados[filtrados["Cluster"] == cluster]
+            ax.scatter(
+                grupo["PC1"], grupo["PC2"], s=10, alpha=0.32,
+                color=COLORES[cluster - 1], label=perfiles[cluster],
             )
-            ax.bar_label(barras, padding=5, fontsize=8, color=TINTA)
-            ax.set_xlabel("Clúster")
-            ax.set_ylabel("Clientes")
-            ax.set_ylim(0, max(conteos.max(), 1) * 1.18)
-            mostrar_grafica(fig)
-
-    with derecha:
-        with st.container():
-            st.markdown("**Mapa de los grupos**")
-            st.caption("Cada punto representa un cliente en dos componentes principales")
-            fig, ax = plt.subplots(figsize=(8, 4.6))
-            preparar_grafica(ax, None)
-            for cluster in grupos:
-                grupo = filtrados[filtrados["Cluster"] == cluster]
-                ax.scatter(
-                    grupo["PC1"], grupo["PC2"], s=10, alpha=0.32,
-                    color=COLORES[cluster - 1], label=f"Clúster {cluster}",
-                )
-            ax.set_xlabel("Componente principal 1")
-            ax.set_ylabel("Componente principal 2")
-            ax.legend(markerscale=2, frameon=False, fontsize=8, ncol=2)
-            mostrar_grafica(fig)
+        ax.set_xlabel("Componente principal 1")
+        ax.set_ylabel("Componente principal 2")
+        ax.legend(markerscale=2, frameon=False, fontsize=8, ncol=2,
+                  loc="upper center", bbox_to_anchor=(0.5, -0.14))
+        mostrar_grafica(fig)
 
     st.divider()
     st.subheader("Comparación de características")
-    izquierda, derecha = st.columns(2, gap="medium")
-    with izquierda:
-        with st.container():
-            st.markdown("**Montos medianos por clúster**")
-            st.caption("Saldo, compras y adelantos")
-            medianas = filtrados.groupby("Cluster")[["BALANCE", "PURCHASES", "CASH_ADVANCE"]].median()
-            fig, ax = plt.subplots(figsize=(7, 4.4))
-            preparar_grafica(ax)
-            medianas.rename(columns={
-                "BALANCE": "Saldo", "PURCHASES": "Compras", "CASH_ADVANCE": "Adelantos",
-            }).plot(kind="bar", ax=ax, color=["#4278B8", "#13998F", "#D8A03B"], width=0.72)
-            ax.set_xlabel("Clúster")
-            ax.set_ylabel("Monto mediano")
-            ax.tick_params(axis="x", labelrotation=0)
-            ax.legend(title="Variable", frameon=False, fontsize=8, title_fontsize=8)
-            mostrar_grafica(fig)
 
-    with derecha:
-        with st.container():
-            st.markdown("**Pago completo promedio**")
-            st.caption("Porcentaje por clúster")
-            pago = filtrados.groupby("Cluster")["PRC_FULL_PAYMENT"].mean() * 100
-            fig, ax = plt.subplots(figsize=(7, 4.4))
-            preparar_grafica(ax)
-            barras = ax.bar(
-                [str(c) for c in pago.index], pago.values,
-                color=[COLORES[c - 1] for c in pago.index], width=0.62,
-            )
-            ax.bar_label(barras, fmt="%.1f%%", padding=5, fontsize=8, color=TINTA)
-            ax.set_xlabel("Clúster")
-            ax.set_ylabel("Porcentaje")
-            ax.set_ylim(0, 105)
-            mostrar_grafica(fig)
+    with st.container():
+        st.markdown("**Montos medianos por perfil**")
+        st.caption("Saldo, compras y adelantos")
+        medianas = filtrados.groupby("Cluster")[["BALANCE", "PURCHASES", "CASH_ADVANCE"]].median()
+        medianas.index = [etiqueta_perfil(c) for c in medianas.index]
+        fig, ax = plt.subplots(figsize=(10, 5.5))
+        preparar_grafica(ax, "x")
+        medianas.rename(columns={
+            "BALANCE": "Saldo", "PURCHASES": "Compras", "CASH_ADVANCE": "Adelantos",
+        }).plot(kind="barh", ax=ax, color=["#4278B8", "#13998F", "#D8A03B"], width=0.72)
+        ax.invert_yaxis()
+        ax.set_xlabel("Monto mediano")
+        ax.set_ylabel("")
+        ax.legend(title="Variable", frameon=False, fontsize=9, title_fontsize=9)
+        mostrar_grafica(fig)
+
+    with st.container():
+        st.markdown("**Pago completo promedio**")
+        st.caption("Porcentaje por perfil")
+        pago = filtrados.groupby("Cluster")["PRC_FULL_PAYMENT"].mean() * 100
+        fig, ax = plt.subplots(figsize=(10, 4.8))
+        preparar_grafica(ax, "x")
+        barras = ax.barh(
+            [etiqueta_perfil(c) for c in pago.index], pago.values,
+            color=[COLORES[c - 1] for c in pago.index], height=0.62,
+        )
+        ax.invert_yaxis()
+        ax.bar_label(barras, fmt="%.1f%%", padding=5, fontsize=9, color=TINTA)
+        ax.set_xlabel("Porcentaje")
+        ax.set_xlim(0, 105)
+        mostrar_grafica(fig)
 
     st.divider()
     with st.container():
-        st.markdown("**Estadísticas descriptivas de los clústeres**")
+        st.markdown("**Estadísticas descriptivas de los perfiles**")
         st.caption("Los valores se actualizan al cambiar los filtros")
         tabla = filtrados.groupby(["Cluster", "Perfil"]).agg(
             Clientes=("CUST_ID", "count"),
@@ -272,8 +277,8 @@ def pagina_segmentacion():
             Pago_completo_promedio=("PRC_FULL_PAYMENT", "mean"),
         ).reset_index()
         tabla["Pago_completo_promedio"] *= 100
+        tabla = tabla.drop(columns="Cluster")
         tabla = tabla.rename(columns={
-            "Cluster": "Clúster",
             "Saldo_promedio": "Saldo promedio",
             "Saldo_mediano": "Saldo mediano",
             "Compras_medianas": "Compras medianas",
@@ -286,11 +291,11 @@ def pagina_segmentacion():
     st.divider()
     st.subheader("Perfiles de clientes")
     descripciones = {
-        1: "Baja actividad: saldo y límite de crédito bajos.",
-        2: "Compras altas, saldo bajo y pago completo frecuente.",
-        3: "Compras altas y poco pago completo.",
-        4: "Adelantos de efectivo con pocas compras.",
-        5: "Compras y adelantos con saldo alto."
+        1: "Saldo y límite de crédito bajos.",
+        2: "Compras altas, saldo bajo y pagos completos frecuentes.",
+        3: "Compras altas y pagos completos poco frecuentes.",
+        4: "Uso de adelantos de efectivo con pocas compras.",
+        5: "Saldo alto combinado con compras y adelantos."
     }
     columnas = st.columns(3, gap="medium")
     for posicion, cluster in enumerate(grupos):
@@ -298,7 +303,7 @@ def pagina_segmentacion():
             st.html(
                 f'<div class="profile-entry" style="--profile-color:{COLORES[cluster - 1]}">'
                 f'<span class="cluster-dot" style="background:{COLORES[cluster - 1]}"></span>'
-                f'<span class="cluster-label">CLÚSTER {cluster}</span>'
+                f'<span class="profile-label">{perfiles[cluster]}</span>'
                 f'<p>{descripciones[cluster]}</p></div>'
             )
 
@@ -310,17 +315,17 @@ def pagina_segmentacion():
         with st.container():
             st.html('<h4 class="column-heading">Hallazgos</h4>')
             st.markdown(
-                "- Los clústeres 2 y 3 tienen compras medianas parecidas, pero difieren mucho en el pago completo.\n"
-                "- El clúster 4 se distingue por adelantos de efectivo y pocas compras.\n"
-                "- El clúster 5 presenta un saldo mediano mayor que el clúster 1."
+                f"- **{perfiles[2]}** y **{perfiles[3]}** tienen compras medianas parecidas, pero difieren mucho en el pago completo.\n"
+                f"- **{perfiles[4]}** se distingue por adelantos de efectivo y pocas compras.\n"
+                f"- **{perfiles[5]}** presenta un saldo mediano mayor que **{perfiles[1]}**."
             )
     with derecha:
         with st.container():
             st.html('<h4 class="column-heading recommendations">Recomendaciones</h4>')
             st.markdown(
-                "- Probar recordatorios de pago para el clúster 3.\n"
-                "- Informar el costo de los adelantos al clúster 4.\n"
-                "- Ofrecer alertas de saldo al clúster 5."
+                f"- Probar recordatorios de pago para **{perfiles[3]}**.\n"
+                f"- Informar el costo de los adelantos a **{perfiles[4]}**.\n"
+                f"- Ofrecer alertas de saldo a **{perfiles[5]}**."
             )
 
 
