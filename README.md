@@ -58,6 +58,6 @@ El CSV procesado ya está incluido, así que puedes abrir el dashboard directame
 python -m streamlit run dashboard.py
 ```
 
-Abre en el navegador la dirección local que indique Streamlit, normalmente `http://localhost:8501`. El dashboard tiene dos secciones: **Panorama general** y **Segmentación K-Means**. Sus filtros permiten explorar los perfiles, el monto de compras y el uso de adelantos de efectivo. Al pulsar en la barra lateral suena un breve efecto de moneda; el interruptor **Sonido de monedas** permite apagarlo.
+Abre en el navegador la dirección local que indique Streamlit, normalmente `http://localhost:8501`. El dashboard tiene dos secciones: **Panorama general** y **Segmentación K-Means**, accesibles desde la barra superior. El botón **Filtros** abre un panel para elegir perfiles, rangos de compras y uso de adelantos. El contador de clientes se actualiza con cada selección; **Restablecer filtros** devuelve la vista completa. Al usar la navegación y los filtros suena un breve efecto de moneda; el interruptor **Sonido de monedas** permite apagarlo.
 
 El video de mercado es decorativo. Las cifras y gráficas del análisis siguen correspondiendo a clientes de tarjetas de crédito, no a precios de criptomonedas.

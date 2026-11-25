@@ -12,7 +12,7 @@ st.set_page_config(
     page_title="Análisis de clientes | Tarjetas de crédito",
     page_icon=":material/candlestick_chart:",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 st.html(Path(__file__).parent / ".streamlit" / "style.css")
 st.html(
@@ -88,13 +88,116 @@ def etiqueta_perfil(cluster):
     return fill(perfiles[cluster], width=27)
 
 
-# Aplicar tres filtros a las dos páginas
-st.sidebar.html(
-    '<div class="sidebar-brand"><span class="brand-mark">AC</span>'
-    '<span>FINANCE / CLIENTES</span></div>'
+# Navegación superior y filtros compartidos por las dos vistas
+if "vista_dashboard" not in st.session_state:
+    st.session_state.vista_dashboard = "general"
+
+
+def cambiar_vista(vista):
+    st.session_state.vista_dashboard = vista
+
+
+def restablecer_filtros():
+    st.session_state.perfiles_filtro = sorted(datos["Cluster"].unique().tolist())
+    st.session_state.compras_filtro = "Todas"
+    st.session_state.adelantos_filtro = "Todos"
+    st.session_state.rango_personalizado = (0, int(np.ceil(datos["PURCHASES"].max())))
+
+
+clusters = sorted(datos["Cluster"].unique().tolist())
+limite_compras = int(np.ceil(datos["PURCHASES"].max()))
+for clave, valor in {
+    "perfiles_filtro": clusters,
+    "compras_filtro": "Todas",
+    "adelantos_filtro": "Todos",
+    "rango_personalizado": (0, limite_compras),
+}.items():
+    if clave not in st.session_state:
+        st.session_state[clave] = valor
+
+with st.container(key="market_topbar"):
+    marca, general, segmentacion, panel = st.columns(
+        [2.1, 1.15, 1.5, 1.2], vertical_alignment="center", gap="small"
+    )
+    with marca:
+        st.html(
+            '<div class="topbar-brand"><span class="brand-mark">AC</span>'
+            '<span><strong>ATLAS CREDIT</strong><small>INTELIGENCIA DE CLIENTES</small></span></div>'
+        )
+    with general:
+        st.button(
+            "Panorama", icon=":material/analytics:", use_container_width=True,
+            type="primary" if st.session_state.vista_dashboard == "general" else "tertiary",
+            on_click=cambiar_vista, args=("general",), key="nav_general",
+        )
+    with segmentacion:
+        st.button(
+            "Segmentación", icon=":material/finance:", use_container_width=True,
+            type="primary" if st.session_state.vista_dashboard == "segmentacion" else "tertiary",
+            on_click=cambiar_vista, args=("segmentacion",), key="nav_segmentacion",
+        )
+    with panel:
+        with st.popover("Filtros", icon=":material/tune:", use_container_width=True):
+            st.markdown("**Explora los clientes**")
+            st.caption("Los cambios se reflejan al instante en ambas vistas.")
+            clusters_elegidos = st.pills(
+                "Perfiles", clusters, selection_mode="multi",
+                format_func=lambda numero: f"{numero} · {perfiles[numero]}",
+                key="perfiles_filtro", wrap=True,
+            )
+            compra = st.pills(
+                "Monto de compras",
+                ["Todas", "Sin compras", "Hasta 500", "500 a 2,000", "Más de 2,000", "Personalizar"],
+                required=True, key="compras_filtro", wrap=True,
+            )
+            if compra == "Personalizar":
+                rango_compras = st.slider(
+                    "Rango de compras", 0, limite_compras,
+                    key="rango_personalizado",
+                )
+            uso_adelantos = st.segmented_control(
+                "Adelantos de efectivo", ["Todos", "Con", "Sin"],
+                required=True, key="adelantos_filtro",
+            )
+            st.button(
+                "Restablecer filtros", icon=":material/restart_alt:",
+                on_click=restablecer_filtros, key="restablecer_filtros",
+            )
+            st.divider()
+            sonido_activo = st.toggle("Sonido de monedas", value=True, key="sonido_monedas")
+
+rangos_rapidos = {
+    "Sin compras": (0, 0),
+    "Hasta 500": (0, 500),
+    "500 a 2,000": (500, 2000),
+    "Más de 2,000": (2000, limite_compras),
+}
+rango_compras = (
+    rango_compras if compra == "Personalizar"
+    else rangos_rapidos.get(compra, (0, limite_compras))
 )
-st.sidebar.caption("Explora los patrones de uso y pago de tarjetas.")
-sonido_activo = st.sidebar.toggle("Sonido de monedas", value=True, key="sonido_monedas")
+
+filtrados = datos[
+    datos["Cluster"].isin(clusters_elegidos)
+    & datos["PURCHASES"].between(*rango_compras)
+].copy()
+if compra == "Más de 2,000":
+    filtrados = filtrados[filtrados["PURCHASES"] > 2000]
+elif compra == "500 a 2,000":
+    filtrados = filtrados[filtrados["PURCHASES"] > 500]
+if uso_adelantos == "Con":
+    filtrados = filtrados[filtrados["CASH_ADVANCE"] > 0]
+elif uso_adelantos == "Sin":
+    filtrados = filtrados[filtrados["CASH_ADVANCE"] == 0]
+
+st.html(
+    '<div class="filter-status"><span class="status-pulse"></span>'
+    f'<strong>{len(filtrados):,} clientes</strong><span>de {len(datos):,}</span>'
+    f'<span class="status-separator">/</span><span>{len(clusters_elegidos)} perfiles</span>'
+    f'<span class="status-separator">/</span><span>Compras: {compra.lower()}</span>'
+    f'<span class="status-separator">/</span><span>Adelantos: {uso_adelantos.lower()}</span></div>'
+)
+
 components.html(
     f"""<script>
     (() => {{
@@ -108,8 +211,10 @@ components.html(
       audio.preload = "auto";
       const handler = (event) => {{
         if (!{str(sonido_activo).lower()}) return;
-        const sidebar = root.querySelector('[data-testid="stSidebar"]');
-        if (!sidebar?.contains(event.target)) return;
+        const topbar = root.querySelector('.st-key-market_topbar');
+        const inToolbar = topbar?.contains(event.target);
+        const inFilters = event.target.closest('[data-testid="stPopover"], [data-testid="stPopoverBody"]');
+        if (!inToolbar && !inFilters) return;
         const now = performance.now();
         if (now - host[key].last < 120) return;
         host[key].last = now;
@@ -124,41 +229,12 @@ components.html(
     </script>""",
     height=0,
 )
-st.sidebar.divider()
-st.sidebar.subheader("Filtros")
-clusters = sorted(datos["Cluster"].unique().tolist())
-clusters_elegidos = st.sidebar.multiselect(
-    "Perfiles de clientes", clusters, default=clusters,
-    format_func=lambda numero: perfiles[numero],
-)
-limite_compras = int(np.ceil(datos["PURCHASES"].max()))
-rango_compras = st.sidebar.slider(
-    "Monto de compras", 0, limite_compras, (0, limite_compras)
-)
-uso_adelantos = st.sidebar.selectbox(
-    "Adelantos de efectivo", ["Todos", "Con adelantos", "Sin adelantos"]
-)
-
-filtrados = datos[
-    datos["Cluster"].isin(clusters_elegidos)
-    & datos["PURCHASES"].between(*rango_compras)
-].copy()
-if uso_adelantos == "Con adelantos":
-    filtrados = filtrados[filtrados["CASH_ADVANCE"] > 0]
-elif uso_adelantos == "Sin adelantos":
-    filtrados = filtrados[filtrados["CASH_ADVANCE"] == 0]
-
-st.sidebar.divider()
-st.sidebar.metric("Clientes visibles", f"{len(filtrados):,}")
-st.sidebar.caption(f"De {len(datos):,} clientes en el conjunto completo")
-
-
 # Página 1: análisis general de los clientes
 def pagina_general():
     encabezado(
         "ANÁLISIS FINANCIERO · 01",
         "Panorama de clientes",
-        "Consulta compras, saldos y uso de adelantos. Los filtros del panel lateral se aplican a ambas páginas.",
+        "Consulta compras, saldos y uso de adelantos. Ajusta la selección desde los filtros superiores.",
     )
 
     if filtrados.empty:
@@ -374,9 +450,7 @@ def pagina_segmentacion():
             )
 
 
-# Navegar entre las dos páginas del dashboard
-pagina = st.navigation([
-    st.Page(pagina_general, title="Panorama general", icon=":material/bar_chart:", default=True),
-    st.Page(pagina_segmentacion, title="Segmentación K-Means", icon=":material/groups:"),
-])
-pagina.run()
+if st.session_state.vista_dashboard == "general":
+    pagina_general()
+else:
+    pagina_segmentacion()

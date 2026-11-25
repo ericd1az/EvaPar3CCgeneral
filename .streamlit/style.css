@@ -30,46 +30,106 @@
 [data-testid="stMain"] { position: relative; z-index: 1; }
 [data-testid="stMainBlockContainer"] {
   max-width: 1320px;
-  padding-top: 2.3rem;
+  padding-top: 1.1rem;
   padding-bottom: 5rem;
 }
 [data-testid="stHeader"] { background: transparent !important; }
-[data-testid="stSidebar"] {
-  z-index: 5;
-  background: rgba(5, 17, 32, 0.96) !important;
-  border-right: 1px solid rgba(237, 184, 88, 0.28);
-  backdrop-filter: blur(18px);
-}
-[data-testid="stSidebar"] hr,
+[data-testid="stSidebar"],
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
 [data-testid="stMain"] hr { border-color: rgba(156, 195, 213, 0.2) !important; }
-[data-testid="stSidebar"] a[aria-current="page"] {
-  color: #f5cc7d !important;
-  background: rgba(233, 185, 91, 0.12) !important;
-  border-left: 2px solid #e9b95b;
+.st-key-market_topbar {
+  position: sticky;
+  top: 0.2rem;
+  z-index: 20;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(239, 195, 103, 0.39);
+  border-top: 2px solid #e9b95b;
+  background: linear-gradient(105deg, rgba(4, 17, 32, 0.97), rgba(8, 30, 50, 0.94));
+  box-shadow: 0 12px 30px rgba(0, 5, 15, 0.42);
+  backdrop-filter: blur(20px);
 }
-[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
-[data-testid="stSidebar"] [data-testid="stMetricLabel"] p { color: #d6e4ed !important; }
-
-.sidebar-brand {
+.st-key-market_topbar [data-testid="stHorizontalBlock"] { align-items: center; }
+.st-key-market_topbar [data-testid="stButton"] button,
+.st-key-market_topbar [data-testid="stPopover"] button {
+  min-height: 2.65rem;
+  border-radius: 0;
+  font-family: Bahnschrift, "Segoe UI", sans-serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.01em;
+}
+.st-key-market_topbar [data-testid="stButton"] button[kind="tertiary"] {
+  color: #d2e0e9;
+  border-bottom: 1px solid transparent;
+}
+.st-key-market_topbar [data-testid="stButton"] button[kind="tertiary"]:hover {
+  color: #f9d28b;
+  border-bottom-color: #e9b95b;
+  background: rgba(233, 185, 91, 0.08);
+}
+.st-key-market_topbar [data-testid="stButton"] button[kind="primary"] {
+  color: #101b27;
+  background: #e9b95b;
+  border-color: #e9b95b;
+}
+.st-key-market_topbar [data-testid="stPopover"] button {
+  color: #f7d392;
+  background: rgba(227, 180, 83, 0.11);
+  border: 1px solid rgba(233, 185, 91, 0.66);
+}
+.topbar-brand {
   display: flex;
   align-items: center;
   gap: 0.78rem;
-  padding-top: 0.4rem;
   color: #f2f5fa;
   font-family: Bahnschrift, "Segoe UI", sans-serif;
-  font-size: 0.9rem;
-  font-weight: 650;
-  letter-spacing: 0.09em;
+  line-height: 1.1;
+}
+.topbar-brand strong {
+  display: block;
+  font-size: 0.95rem;
+  letter-spacing: 0.15em;
+}
+.topbar-brand small {
+  display: block;
+  margin-top: 0.35rem;
+  color: #92afbf;
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
 }
 .brand-mark {
   display: inline-flex;
-  width: 2.2rem; height: 2.2rem;
+  flex: none;
+  width: 2.55rem; height: 2.55rem;
   align-items: center; justify-content: center;
   border: 1px solid #d7a74e;
   background: rgba(215, 167, 78, 0.13);
   color: #f6ca76;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   letter-spacing: 0;
+}
+.filter-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.52rem;
+  min-height: 2.9rem;
+  padding: 0.45rem 0.4rem 0.55rem;
+  color: #c1d2de;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.82rem;
+}
+.filter-status strong { color: #f5cd80; }
+.filter-status .status-separator { color: #5e829b; }
+.status-pulse {
+  width: 0.48rem; height: 0.48rem;
+  border-radius: 50%;
+  background: #2ac5ac;
+  box-shadow: 0 0 0 4px rgba(42, 197, 172, 0.13);
+}
+[data-testid="stPopover"] [data-testid="stWidgetLabel"] p { color: #f1d393; }
+[data-testid="stPopoverBody"] {
+  width: min(33rem, calc(100vw - 1.5rem)) !important;
+  max-width: min(33rem, calc(100vw - 1.5rem)) !important;
 }
 
 .dashboard-hero {
@@ -126,8 +186,7 @@
   font-weight: 500;
   letter-spacing: -0.02em;
 }
-[data-testid="stMain"] [data-testid="stCaptionContainer"] p,
-[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #b2c4d1 !important; }
+[data-testid="stMain"] [data-testid="stCaptionContainer"] p { color: #b2c4d1 !important; }
 [data-testid="stMain"] [data-testid="stMetric"] {
   padding: 0.9rem 0 0.2rem;
   border-top: 1px solid rgba(233, 185, 91, 0.78);
@@ -191,4 +250,6 @@
   .dashboard-hero { padding-right: 1rem; }
   .dashboard-hero::after { opacity: 0.46; }
   [data-testid="stMainBlockContainer"] { padding-top: 1.2rem; }
+  .st-key-market_topbar { position: relative; top: 0; padding: 0.7rem; }
+  .topbar-brand small { display: none; }
 }
