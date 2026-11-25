@@ -106,6 +106,9 @@ def restablecer_filtros():
 
 clusters = sorted(datos["Cluster"].unique().tolist())
 limite_compras = int(np.ceil(datos["PURCHASES"].max()))
+opciones_compras = [
+    "Todas", "Sin compras", "Hasta 500", "500 a 2,000", "Más de 2,000", "Personalizar"
+]
 for clave, valor in {
     "perfiles_filtro": clusters,
     "compras_filtro": "Todas",
@@ -114,6 +117,10 @@ for clave, valor in {
 }.items():
     if clave not in st.session_state:
         st.session_state[clave] = valor
+if st.session_state.compras_filtro not in opciones_compras:
+    st.session_state.compras_filtro = "Todas"
+if st.session_state.adelantos_filtro not in ("Todos", "Con", "Sin"):
+    st.session_state.adelantos_filtro = "Todos"
 
 with st.container(key="market_topbar"):
     marca, general, segmentacion, panel = st.columns(
@@ -144,12 +151,12 @@ with st.container(key="market_topbar"):
                 "Perfiles", clusters, selection_mode="multi",
                 format_func=lambda numero: f"{numero} · {perfiles[numero]}",
                 key="perfiles_filtro", wrap=True,
-            )
+            ) or []
             compra = st.pills(
                 "Monto de compras",
-                ["Todas", "Sin compras", "Hasta 500", "500 a 2,000", "Más de 2,000", "Personalizar"],
+                opciones_compras,
                 required=True, key="compras_filtro", wrap=True,
-            )
+            ) or "Todas"
             if compra == "Personalizar":
                 rango_compras = st.slider(
                     "Rango de compras", 0, limite_compras,
@@ -158,7 +165,7 @@ with st.container(key="market_topbar"):
             uso_adelantos = st.segmented_control(
                 "Adelantos de efectivo", ["Todos", "Con", "Sin"],
                 required=True, key="adelantos_filtro",
-            )
+            ) or "Todos"
             st.button(
                 "Restablecer filtros", icon=":material/restart_alt:",
                 on_click=restablecer_filtros, key="restablecer_filtros",
