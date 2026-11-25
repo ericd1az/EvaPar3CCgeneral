@@ -32,7 +32,7 @@ COLORES = ["#4CB5E3", "#2AC5AC", "#F2B94D", "#A78BE9", "#F08872"]
 
 def encabezado(seccion, titulo, descripcion):
     st.html(
-        f'<div class="dashboard-hero" data-number="{seccion[-2:]}">'
+        '<div class="dashboard-hero">'
         f'<span class="hero-eyebrow">{seccion}</span>'
         f'<h1>{titulo}</h1>'
         f'<p>{descripcion}</p>'
