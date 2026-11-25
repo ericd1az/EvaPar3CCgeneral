@@ -75,7 +75,7 @@ if not ruta_csv.exists():
 datos = pd.read_csv(ruta_csv)
 columnas_necesarias = {
     "CUST_ID", "BALANCE", "PURCHASES", "CASH_ADVANCE", "CREDIT_LIMIT",
-    "PRC_FULL_PAYMENT", "Cluster", "PC1", "PC2", "Perfil"
+    "PRC_FULL_PAYMENT", "Cluster", "PC1", "PC2", "Perfil", "Conjunto"
 }
 if not columnas_necesarias.issubset(datos.columns):
     st.error("El CSV procesado no contiene todas las columnas necesarias para el dashboard.")
@@ -314,6 +314,12 @@ def pagina_segmentacion():
         "ANÁLISIS FINANCIERO · 02",
         "Segmentación de clientes",
         "Cinco grupos creados con K-Means a partir de saldo, compras, adelantos, pago completo y límite de crédito.",
+    )
+    conjuntos = datos["Conjunto"].value_counts()
+    st.caption(
+        f"Modelo entrenado con {conjuntos.get('Entrenamiento', 0):,} clientes (70 %) "
+        f"y probado con {conjuntos.get('Prueba', 0):,} (30 %). "
+        "El dashboard muestra los grupos asignados a ambos conjuntos."
     )
 
     if filtrados.empty:

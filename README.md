@@ -6,7 +6,9 @@ Proyecto de la tercera unidad de **Extracción de Conocimiento en Bases de Datos
 
 Utilizamos el conjunto público [Credit Card Dataset for Clustering](https://www.kaggle.com/datasets/arjunbhasin2013/ccdata), publicado por Arjun Bhasin en Kaggle. El archivo original, `CC GENERAL.csv`, contiene 8,950 filas y 18 columnas. Para formar los grupos se utilizan el saldo, las compras, los adelantos de efectivo, la proporción de pagos completos y el límite de crédito.
 
-El programa revisa y prepara los datos, compara K-Means con valores de K entre 2 y 8, y selecciona **cinco clústeres**. El archivo `clientes_segmentados.csv` contiene los datos procesados y el grupo asignado a cada cliente. La documentación explica la metodología, los resultados y las limitaciones del análisis.
+El programa revisa y prepara los datos y los divide de forma reproducible en **70 % para entrenamiento (6,265 clientes)** y **30 % para prueba (2,685 clientes)**. La mediana para completar nulos y el escalamiento se calculan solo con entrenamiento. Se comparan modelos K-Means con valores de K entre 2 y 8 sobre ese conjunto y se conservan **cinco clústeres** por su separación e interpretación. El modelo asigna grupos a los clientes de prueba sin volver a entrenarse: la silueta es **0.3506 en entrenamiento** y **0.3534 en prueba**. Es una medida de separación de grupos, no un porcentaje de aciertos.
+
+El archivo `clientes_segmentados.csv` contiene los 8,950 clientes, el grupo asignado y la columna `Conjunto`, que distingue entrenamiento y prueba. El dashboard muestra ambos conjuntos. Los resultados completos de esta versión se resumen en la [actualización del análisis 70/30](documentacion/Actualizacion_70_30.md). El [PDF original](documentacion/Evaluacion%20parcial%203.pdf) conserva las tablas y capturas de la ejecución anterior.
 
 ## Herramientas
 
@@ -34,10 +36,11 @@ EvaPar3CCgeneral/
 │   ├── market_poster.jpg
 │   └── coin_chime.wav
 └── documentacion/
-    └── Evaluacion parcial 3.pdf
+    ├── Evaluacion parcial 3.pdf
+    └── Actualizacion_70_30.md
 ```
 
-`evaluacion.py` genera el CSV procesado a partir del original. `dashboard.py` lee el CSV procesado. La carpeta `.streamlit` define el tema y permite servir los archivos locales de `static`: el video de fondo, su imagen de respaldo y el sonido. El [PDF del proyecto](documentacion/Evaluacion%20parcial%203.pdf) incluye las conclusiones y capturas de los resultados.
+`evaluacion.py` genera el CSV procesado a partir del original. `dashboard.py` lee el CSV procesado. La carpeta `.streamlit` define el tema y permite servir los archivos locales de `static`: el video de fondo, su imagen de respaldo y el sonido. La carpeta `documentacion` contiene el informe original y la actualización con los resultados de entrenamiento y prueba.
 
 ## Cómo ejecutar el análisis
 

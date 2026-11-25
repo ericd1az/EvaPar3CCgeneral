@@ -42,6 +42,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 
@@ -169,14 +170,20 @@ print("\nParte 3. Limpieza y preparación de datos")
 print("Totales de compra corregidos:", inconsistencias.sum())
 
 # Realizar el tratamiento de valores nulos y registros duplicados
-# Se eliminan las filas idénticas. Los nulos de las columnas numéricas se
-# completan con su mediana, que se ve menos afectada por montos extremos.
+# Se eliminan las filas idénticas. Después se separan 70 % para entrenar y
+# 30 % para probar. Las medianas se calculan solo con entrenamiento y se
+# usan para completar los nulos de ambos conjuntos.
 filas_antes = len(df_limpio)
 df_limpio = df_limpio.drop_duplicates().copy()
 nulos_antes = df_limpio[columnas_numericas].isna().sum()
-medianas = df_limpio[columnas_numericas].median()
+indices_entrenamiento, indices_prueba = train_test_split(
+    df_limpio.index, test_size=0.30, random_state=42
+)
+medianas = df_limpio.loc[indices_entrenamiento, columnas_numericas].median()
 df_limpio[columnas_numericas] = df_limpio[columnas_numericas].fillna(medianas)
 print("Filas duplicadas eliminadas:", filas_antes - len(df_limpio))
+print(f"División de datos: entrenamiento {len(indices_entrenamiento):,} (70 %), "
+      f"prueba {len(indices_prueba):,} (30 %).")
 print("Valores completados por columna:")
 print(nulos_antes[nulos_antes.gt(0)].to_string())
 
@@ -208,10 +215,11 @@ X_transformado = X.copy()
 X_transformado[columnas_montos] = np.log1p(X[columnas_montos])
 
 # Implementar una técnica de escalamiento, como StandardScaler
-# Se centra cada variable en cero y se ajusta su desviación estándar a uno.
-# Así, una variable no domina las distancias solo por estar en unidades mayores.
+# El escalador aprende el promedio y la desviación solo con entrenamiento.
+# Luego transforma ambos conjuntos con esos mismos valores.
 escalador = StandardScaler()
-X_escalado = escalador.fit_transform(X_transformado)
+escalador.fit(X_transformado.loc[indices_entrenamiento])
+X_escalado = escalador.transform(X_transformado)
 
 # Mostrar los resultados de la limpieza y preparación de datos
 # Se comprueban los nulos restantes y se muestran los primeros datos escalados.
@@ -219,6 +227,8 @@ print(f"\nDatos limpios: {len(df_limpio)} filas y {df_limpio.shape[1]} columnas.
 print("Nulos restantes en los datos limpios:", df_limpio.isna().sum().sum())
 print("\nPrimeros cinco registros listos para K-Means:")
 datos_escalados = pd.DataFrame(X_escalado, columns=variables_agrupamiento, index=df_limpio.index)
+X_entrenamiento = datos_escalados.loc[indices_entrenamiento].to_numpy()
+X_prueba = datos_escalados.loc[indices_prueba].to_numpy()
 print(datos_escalados.head().round(3).to_string(index=False))
 
 # Explicar la importancia de las transformaciones realizadas
@@ -230,7 +240,7 @@ print(datos_escalados.head().round(3).to_string(index=False))
 
 # Seleccionar al menos tres variables para el entrenamiento del modelo
 # Se usan las cinco variables justificadas en la Parte 2, ya transformadas
-# y escaladas en X_escalado. Cada fila sigue representando a un cliente.
+# y escaladas en X_entrenamiento. X_prueba queda aparte para la evaluación.
 print("\nParte 4. Implementación del algoritmo K-Means")
 print("Variables de entrenamiento:", ", ".join(variables_agrupamiento))
 
@@ -242,13 +252,15 @@ configuracion_kmeans = {"n_init": 10, "random_state": 42}
 # Para cada K de 2 a 8 se calcula la inercia y la silueta. La inercia mide
 # la dispersión dentro de los grupos y suele bajar al aumentar K. Una silueta
 # mayor indica grupos más definidos. Se usa la misma muestra de 2,500 clientes
-# para calcular la silueta de cada modelo y la misma semilla para reproducirla.
+# del entrenamiento para calcular la silueta de cada modelo, sin usar prueba.
 resultados_k = []
 modelos_k = {}
 for k in range(2, 9):
     modelo = KMeans(n_clusters=k, **configuracion_kmeans)
-    modelo.fit(X_escalado)
-    silueta = silhouette_score(X_escalado, modelo.labels_, sample_size=2500, random_state=42)
+    modelo.fit(X_entrenamiento)
+    silueta = silhouette_score(
+        X_entrenamiento, modelo.labels_, sample_size=2500, random_state=42
+    )
     modelos_k[k] = modelo
     resultados_k.append({"K": k, "Inercia": modelo.inertia_, "Silueta": silueta})
 
@@ -257,9 +269,8 @@ print("\nEvaluación de K entre 2 y 8:")
 print(evaluacion_k.to_string(formatters={"Inercia": "{:.2f}".format, "Silueta": "{:.4f}".format}))
 
 # Seleccionar y justificar el número de clústeres más adecuado
-# K = 5 obtuvo la silueta más alta entre los valores probados y permite
-# distinguir cinco perfiles de uso y pago. La diferencia con K = 6 es
-# pequeña, por lo que también se prefiere la opción con menos grupos.
+# K = 5 tiene una silueta cercana a las mejores opciones y permite explicar
+# cinco perfiles claros. Las mejoras al usar más grupos son pequeñas.
 k_final = 5
 k_alternativo = 6
 print(f"\nK elegido: {k_final}. Silueta: {evaluacion_k.loc[k_final, 'Silueta']:.4f}.")
@@ -269,15 +280,32 @@ print(f"\nK elegido: {k_final}. Silueta: {evaluacion_k.loc[k_final, 'Silueta']:.
 modelo_final = KMeans(n_clusters=k_final, **configuracion_kmeans)
 
 # Asignar un clúster a cada registro mediante fit_predict()
-# fit_predict() entrena el modelo y devuelve la etiqueta de cada cliente.
+# fit_predict() agrupa a los clientes de entrenamiento. predict() asigna
+# un grupo a los clientes de prueba sin volver a entrenar el modelo.
 # Los números de K-Means son arbitrarios. Para presentar los resultados se
 # numeran los grupos del 1 al 5 ordenándolos por el saldo de sus centroides.
-etiquetas = modelo_final.fit_predict(X_escalado)
+etiquetas_entrenamiento = modelo_final.fit_predict(X_entrenamiento)
+etiquetas_prueba = modelo_final.predict(X_prueba)
+etiquetas = pd.concat([
+    pd.Series(etiquetas_entrenamiento, index=indices_entrenamiento),
+    pd.Series(etiquetas_prueba, index=indices_prueba),
+]).reindex(df_limpio.index)
 centroides_escalados = pd.DataFrame(modelo_final.cluster_centers_, columns=variables_agrupamiento)
 orden = centroides_escalados["BALANCE"].sort_values().index
 numero_cluster = {etiqueta: numero for numero, etiqueta in enumerate(orden, start=1)}
 df_segmentado = df_limpio.copy()
-df_segmentado["Cluster"] = pd.Series(etiquetas, index=df_limpio.index).map(numero_cluster)
+df_segmentado["Cluster"] = etiquetas.map(numero_cluster)
+df_segmentado["Conjunto"] = np.where(
+    df_segmentado.index.isin(indices_entrenamiento), "Entrenamiento", "Prueba"
+)
+
+# Evaluar la separación de los grupos en los datos reservados para prueba.
+# La silueta mide cohesión y separación; no es un porcentaje de aciertos.
+silueta_prueba = silhouette_score(
+    X_prueba, etiquetas_prueba, sample_size=2500, random_state=42
+)
+print(f"Silueta en entrenamiento: {evaluacion_k.loc[k_final, 'Silueta']:.4f}")
+print(f"Silueta en prueba: {silueta_prueba:.4f}")
 
 # Obtener e interpretar los centroides
 # Se revierten el escalamiento y el logaritmo para interpretar los centros.
@@ -300,10 +328,11 @@ print("\nCantidad de clientes por clúster:")
 print(clientes_por_cluster.to_string())
 
 # Crear al menos una gráfica para visualizar los agrupamientos
-# PCA resume las cinco variables escaladas en dos ejes para dibujar los grupos.
+# PCA aprende del entrenamiento y proyecta los dos conjuntos en los mismos ejes.
 # Cada punto representa a un cliente y las X señalan los centroides proyectados.
 pca = PCA(n_components=2)
-df_segmentado[["PC1", "PC2"]] = pca.fit_transform(X_escalado)
+pca.fit(X_entrenamiento)
+df_segmentado[["PC1", "PC2"]] = pca.transform(X_escalado)
 centros_pca = pca.transform(modelo_final.cluster_centers_)
 varianza = pca.explained_variance_ratio_ * 100
 
@@ -327,12 +356,15 @@ plt.tight_layout()
 # métricas y se observa cómo se distribuye cada grupo de K = 5 en K = 6.
 print(f"\nComparación de K = {k_final} y K = {k_alternativo}:")
 print(evaluacion_k.loc[[k_final, k_alternativo]].round(4).to_string())
-comparacion = pd.crosstab(df_segmentado["Cluster"], modelos_k[k_alternativo].labels_ + 1)
+etiquetas_alternativas = pd.Series(
+    modelos_k[k_alternativo].predict(X_escalado) + 1, index=df_limpio.index
+)
+comparacion = pd.crosstab(df_segmentado["Cluster"], etiquetas_alternativas)
 comparacion.columns.name = "Cluster (K = 6)"
 print("\nCoincidencias de clientes (filas: K = 5, columnas: K = 6):")
 print(comparacion.to_string())
-print("\nK = 6 reduce la inercia y obtiene una silueta ligeramente menor.")
-print("Los clientes del clúster 3 de K = 5 se reparten principalmente entre dos grupos de K = 6.")
+print("\nK = 6 reduce la inercia y cambia ligeramente la silueta.")
+print("La tabla muestra cómo se reparten los clientes entre las dos configuraciones.")
 
 
 # Parte 5. Análisis e interpretación de resultados
