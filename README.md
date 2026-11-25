@@ -29,11 +29,15 @@ EvaPar3CCgeneral/
 ├── .streamlit/
 │   ├── config.toml
 │   └── style.css
+├── static/
+│   ├── market_loop.mp4
+│   ├── market_poster.jpg
+│   └── coin_chime.wav
 └── documentacion/
     └── Evaluacion parcial 3.pdf
 ```
 
-`evaluacion.py` genera el CSV procesado a partir del original. `dashboard.py` lee el CSV procesado. Los archivos de la carpeta `.streamlit` definen el aspecto del dashboard. El [PDF del proyecto](documentacion/Evaluacion%20parcial%203.pdf) incluye las conclusiones y capturas de los resultados.
+`evaluacion.py` genera el CSV procesado a partir del original. `dashboard.py` lee el CSV procesado. La carpeta `.streamlit` define el tema y permite servir los archivos locales de `static`: el video de fondo, su imagen de respaldo y el sonido. El [PDF del proyecto](documentacion/Evaluacion%20parcial%203.pdf) incluye las conclusiones y capturas de los resultados.
 
 ## Cómo ejecutar el análisis
 
@@ -54,4 +58,6 @@ El CSV procesado ya está incluido, así que puedes abrir el dashboard directame
 python -m streamlit run dashboard.py
 ```
 
-Abre en el navegador la dirección local que indique Streamlit, normalmente `http://localhost:8501`. El dashboard tiene dos secciones: **Panorama general** y **Segmentación K-Means**. Sus filtros permiten explorar los clústeres, el monto de compras y el uso de adelantos de efectivo.
+Abre en el navegador la dirección local que indique Streamlit, normalmente `http://localhost:8501`. El dashboard tiene dos secciones: **Panorama general** y **Segmentación K-Means**. Sus filtros permiten explorar los perfiles, el monto de compras y el uso de adelantos de efectivo. Al pulsar en la barra lateral suena un breve efecto de moneda; el interruptor **Sonido de monedas** permite apagarlo.
+
+El video de mercado es decorativo. Las cifras y gráficas del análisis siguen correspondiendo a clientes de tarjetas de crédito, no a precios de criptomonedas.

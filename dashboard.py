@@ -5,20 +5,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 
 st.set_page_config(
     page_title="Análisis de clientes | Tarjetas de crédito",
-    page_icon=":material/analytics:",
+    page_icon=":material/candlestick_chart:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 st.html(Path(__file__).parent / ".streamlit" / "style.css")
+st.html(
+    '<div class="market-video-shell" aria-hidden="true">'
+    '<video autoplay muted loop playsinline preload="metadata" '
+    'poster="/app/static/market_poster.jpg">'
+    '<source src="/app/static/market_loop.mp4" type="video/mp4">'
+    '</video></div>'
+)
 
-TINTA = "#253842"
-MUTED = "#667477"
-TEAL = "#0A6D73"
-COLORES = ["#4278B8", "#13998F", "#D8A03B", "#8A6FC4", "#D77866"]
+TINTA = "#EAF2FA"
+MUTED = "#B5C8D6"
+TEAL = "#31C3D3"
+GOLD = "#E9B95B"
+COLORES = ["#4CB5E3", "#2AC5AC", "#F2B94D", "#A78BE9", "#F08872"]
 
 
 def encabezado(seccion, titulo, descripcion):
@@ -32,19 +41,26 @@ def encabezado(seccion, titulo, descripcion):
 
 
 def preparar_grafica(ax, cuadricula="y"):
-    ax.set_facecolor("#F6F3ED")
-    ax.figure.set_facecolor("#F6F3ED")
-    ax.tick_params(colors=MUTED, labelsize=9, length=0, pad=8)
+    ax.set_facecolor("#081B30")
+    ax.figure.set_facecolor("#081B30")
+    ax.tick_params(colors=MUTED, labelsize=10, length=0, pad=8)
     ax.xaxis.label.set_color(MUTED)
     ax.yaxis.label.set_color(MUTED)
     for borde in ax.spines.values():
         borde.set_visible(False)
     if cuadricula:
-        ax.grid(axis=cuadricula, color="#E2DDD3", linewidth=0.8)
+        ax.grid(axis=cuadricula, color="#2D4C63", linewidth=0.8, alpha=0.7)
         ax.set_axisbelow(True)
 
 
 def mostrar_grafica(fig):
+    for ax in fig.axes:
+        leyenda = ax.get_legend()
+        if leyenda:
+            for texto in leyenda.get_texts():
+                texto.set_color(MUTED)
+            if leyenda.get_title():
+                leyenda.get_title().set_color(MUTED)
     fig.tight_layout(pad=1.6)
     st.pyplot(fig, width="stretch")
     plt.close(fig)
@@ -75,9 +91,39 @@ def etiqueta_perfil(cluster):
 # Aplicar tres filtros a las dos páginas
 st.sidebar.html(
     '<div class="sidebar-brand"><span class="brand-mark">AC</span>'
-    '<span>ANÁLISIS DE CLIENTES</span></div>'
+    '<span>FINANCE / CLIENTES</span></div>'
 )
-st.sidebar.caption("Explora el comportamiento y los grupos de clientes.")
+st.sidebar.caption("Explora los patrones de uso y pago de tarjetas.")
+sonido_activo = st.sidebar.toggle("Sonido de monedas", value=True, key="sonido_monedas")
+components.html(
+    f"""<script>
+    (() => {{
+      const host = window.parent;
+      const root = host.document;
+      const key = "__financeDashboardSound";
+      if (host[key]?.handler) {{
+        root.removeEventListener("pointerdown", host[key].handler, true);
+      }}
+      const audio = new Audio("/app/static/coin_chime.wav");
+      audio.preload = "auto";
+      const handler = (event) => {{
+        if (!{str(sonido_activo).lower()}) return;
+        const sidebar = root.querySelector('[data-testid="stSidebar"]');
+        if (!sidebar?.contains(event.target)) return;
+        const now = performance.now();
+        if (now - host[key].last < 120) return;
+        host[key].last = now;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 0.32;
+        audio.play().catch(() => {{}});
+      }};
+      host[key] = {{ handler, last: 0 }};
+      root.addEventListener("pointerdown", handler, true);
+    }})();
+    </script>""",
+    height=0,
+)
 st.sidebar.divider()
 st.sidebar.subheader("Filtros")
 clusters = sorted(datos["Cluster"].unique().tolist())
@@ -110,7 +156,7 @@ st.sidebar.caption(f"De {len(datos):,} clientes en el conjunto completo")
 # Página 1: análisis general de los clientes
 def pagina_general():
     encabezado(
-        "PANEL DE ANÁLISIS · 01",
+        "ANÁLISIS FINANCIERO · 01",
         "Panorama de clientes",
         "Consulta compras, saldos y uso de adelantos. Los filtros del panel lateral se aplican a ambas páginas.",
     )
@@ -127,9 +173,8 @@ def pagina_general():
     ]
     for columna, (nombre, valor, detalle) in zip(st.columns(4, gap="medium"), indicadores):
         with columna:
-            with st.container(border=True):
-                st.metric(nombre, valor)
-                st.caption(detalle)
+            st.metric(nombre, valor)
+            st.caption(detalle)
 
     st.caption("Los montos conservan las unidades originales del dataset.")
     st.divider()
@@ -163,7 +208,7 @@ def pagina_general():
             })
             fig, ax = plt.subplots(figsize=(7, 4.2))
             preparar_grafica(ax)
-            barras = ax.bar(adelantos.index, adelantos.values, color=["#9AB9C8", TEAL], width=0.55)
+            barras = ax.bar(adelantos.index, adelantos.values, color=["#27617B", GOLD], width=0.55)
             ax.bar_label(barras, padding=5, fontsize=9, color=TINTA)
             ax.set_ylabel("Clientes")
             ax.set_ylim(0, max(adelantos.max(), 1) * 1.18)
@@ -183,7 +228,7 @@ def pagina_general():
 # Página 2: resultados de K-Means
 def pagina_segmentacion():
     encabezado(
-        "PANEL DE ANÁLISIS · 02",
+        "ANÁLISIS FINANCIERO · 02",
         "Segmentación de clientes",
         "Cinco grupos creados con K-Means a partir de saldo, compras, adelantos, pago completo y límite de crédito.",
     )
@@ -240,7 +285,7 @@ def pagina_segmentacion():
         preparar_grafica(ax, "x")
         medianas.rename(columns={
             "BALANCE": "Saldo", "PURCHASES": "Compras", "CASH_ADVANCE": "Adelantos",
-        }).plot(kind="barh", ax=ax, color=["#4278B8", "#13998F", "#D8A03B"], width=0.72)
+        }).plot(kind="barh", ax=ax, color=["#4CB5E3", "#2AC5AC", "#F2B94D"], width=0.72)
         ax.invert_yaxis()
         ax.set_xlabel("Monto mediano")
         ax.set_ylabel("")
