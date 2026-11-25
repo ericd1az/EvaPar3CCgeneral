@@ -8,7 +8,7 @@ Utilizamos el conjunto público [Credit Card Dataset for Clustering](https://www
 
 El programa revisa y prepara los datos y los divide de forma reproducible en **70 % para entrenamiento (6,265 clientes)** y **30 % para prueba (2,685 clientes)**. La mediana para completar nulos y el escalamiento se calculan solo con entrenamiento. Se comparan modelos K-Means con valores de K entre 2 y 8 sobre ese conjunto y se conservan **cinco clústeres** por su separación e interpretación. El modelo asigna grupos a los clientes de prueba sin volver a entrenarse: la silueta es **0.3506 en entrenamiento** y **0.3534 en prueba**. Es una medida de separación de grupos, no un porcentaje de aciertos.
 
-El archivo `clientes_segmentados.csv` contiene los 8,950 clientes, el grupo asignado y la columna `Conjunto`, que distingue entrenamiento y prueba. El dashboard muestra ambos conjuntos. Los resultados completos de esta versión se resumen en la [actualización del análisis 70/30](documentacion/Actualizacion_70_30.md). El [PDF original](documentacion/Evaluacion%20parcial%203.pdf) conserva las tablas y capturas de la ejecución anterior.
+El archivo `clientes_segmentados.csv` contiene los 8,950 clientes, el grupo asignado y la columna `Conjunto`, que distingue entrenamiento y prueba. El dashboard muestra ambos conjuntos. El [PDF actual](documentacion/Evaluacion%20parcial%203.pdf) conserva las tablas y capturas de la ejecución anterior; el análisis vigente está en el código y en el CSV.
 
 ## Herramientas
 
@@ -36,11 +36,10 @@ EvaPar3CCgeneral/
 │   ├── market_poster.jpg
 │   └── coin_chime.wav
 └── documentacion/
-    ├── Evaluacion parcial 3.pdf
-    └── Actualizacion_70_30.md
+    └── Evaluacion parcial 3.pdf
 ```
 
-`evaluacion.py` genera el CSV procesado a partir del original. `dashboard.py` lee el CSV procesado. La carpeta `.streamlit` define el tema y permite servir los archivos locales de `static`: el video de fondo, su imagen de respaldo y el sonido. La carpeta `documentacion` contiene el informe original y la actualización con los resultados de entrenamiento y prueba.
+`evaluacion.py` genera el CSV procesado a partir del original. `dashboard.py` lee el CSV procesado. La carpeta `.streamlit` define el tema y permite servir los archivos locales de `static`: el video de fondo, su imagen de respaldo y el sonido. La carpeta `documentacion` contiene el informe original.
 
 ## Cómo ejecutar el análisis
 
